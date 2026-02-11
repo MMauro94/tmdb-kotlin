@@ -73,11 +73,9 @@ internal object HttpClientFactory {
             // see https://ktor.io/docs/response-validation.html
             expectSuccess = config.expectSuccess
             HttpResponseValidator {
-                handleResponseExceptionWithRequest { exception, _ ->
-                    val clientException = exception as? ClientRequestException ?: return@handleResponseExceptionWithRequest
-                    val exceptionResponse = clientException.response
-                    val tmdbErrorResponse = json.decodeTmdbErrorResponse(exceptionResponse) ?: return@handleResponseExceptionWithRequest
-                    throw TmdbException(tmdbErrorResponse, exception)
+                validateResponse { response ->
+                    val tmdbErrorResponse = json.decodeTmdbErrorResponse(response) ?: return@validateResponse
+                    throw TmdbException(tmdbErrorResponse)
                 }
             }
 
@@ -128,7 +126,7 @@ internal object HttpClientFactory {
     }
 
     private suspend fun Json.decodeTmdbErrorResponse(response: HttpResponse): TmdbErrorResponse? {
-        if (!response.isTmdbStatusHandled) return null
+//        if (!response.isTmdbStatusHandled) return null
 
         return try {
             val exceptionResponseText = response.bodyAsText()
